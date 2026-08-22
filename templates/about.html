@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}About · FreeSAT{% endblock %}
+{% block content %}
+<section class="page-intro narrow">
+  <p class="eyebrow">About</p>
+  <h1>A free desk for standardized-test practice.</h1>
+  <p>
+    FreeSAT is a small Flask app for students and teachers who want original
+    SAT, PSAT, and ACT practice they can copy, print, download, or take in a
+    Bluebook-like room. It ships with 10 labeled demo questions and a larger
+    original bank so filters work without an API key.
+  </p>
+  <p>
+    College Board, Bluebook, SAT, PSAT, and ACT are trademarks of their owners.
+    This site is not affiliated with them and does not reproduce official exam
+    items. AI-generated questions are extra practice, not official forms.
+  </p>
+  <ul class="plain-list">
+    <li>{{ stats.total }} questions currently loaded</li>
+    <li>{{ stats.demo }} demo questions</li>
+    <li>{{ stats.generated }} questions created with an API key on this machine</li>
+  </ul>
+</section>
+{% endblock %}
