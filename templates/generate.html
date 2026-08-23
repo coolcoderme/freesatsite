@@ -2,12 +2,13 @@
 {% block title %}Create questions · FreeSAT{% endblock %}
 {% block content %}
 <section class="page-intro">
-  <p class="eyebrow">OpenAI generator</p>
-  <h1>Write more practice items with your own API key.</h1>
+  <p class="eyebrow">Additional questions</p>
+  <h1>Use an API key only when you want more questions.</h1>
   <p class="lede">
-    The key is sent only to create this batch. It is not saved on the server.
-    New questions stay in the local bank so you can print them or sit them in
-    the testing room. Bank size now: {{ stats.total }} ({{ stats.generated }} generated).
+    The 10 demo items and the built-in bank work with no key. Paste an OpenAI
+    key here solely to generate extra original questions. The key is sent only
+    for that request and is not stored on the server. Bank size now:
+    {{ stats.total }} ({{ stats.generated }} generated).
   </p>
 </section>
 
@@ -45,16 +46,20 @@
     </label>
   </div>
   <label class="wide">OpenAI API key
-    <input type="password" name="api_key" id="api-key" autocomplete="off" placeholder="sk-...">
+    <input type="password" name="api_key" id="api-key" autocomplete="off" placeholder="sk-... used only to generate extra questions">
   </label>
   <label class="check"><input type="checkbox" id="remember-key"> Remember this key in this browser only</label>
+  {% if has_server_key %}
+  <p class="hint">A server key is already configured. You can leave this blank or paste a different key.</p>
+  {% endif %}
   <div class="hero-actions">
-    <button class="btn primary" type="submit">Create questions</button>
+    <button class="btn primary" type="submit">Generate additional questions</button>
   </div>
   <p class="availability" id="generate-status"></p>
 </form>
 
 <section id="generated-preview" class="generated-preview" hidden></section>
+<div id="generated-actions" class="hero-actions" hidden></div>
 {% endblock %}
 
 {% block extra_js %}

@@ -11,7 +11,7 @@
   </p>
   <div class="hero-actions">
     <a class="btn primary" href="{{ url_for('main.practice') }}">Build a practice set</a>
-    <a class="btn ghost" href="{{ url_for('main.generate_page') }}">Add questions with an API key</a>
+    <a class="btn ghost" href="{{ url_for('main.generate_page') }}">Generate additional questions</a>
   </div>
   <dl class="stat-row">
     <div><dt>Questions in the bank</dt><dd>{{ stats.total }}</dd></div>
@@ -44,7 +44,7 @@
   </article>
   <article>
     <h3>Make more</h3>
-    <p>The site ships with 10 demo questions plus extra original items. Paste your own OpenAI key to write more.</p>
+    <p>Ten demo questions plus a built-in bank work with no key. An OpenAI API key is used only to generate additional questions.</p>
   </article>
 </section>
 

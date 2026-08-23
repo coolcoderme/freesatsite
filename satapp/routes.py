@@ -31,6 +31,7 @@ from satapp.bank import (
 )
 from satapp.catalog import SECTIONS, suggested_minutes, topics_for
 from satapp.generate import ALLOWED_MODELS, generate_questions
+from satapp.keys import has_server_key, resolve_api_key, top_up_questions
 from satapp.pdf import render_worksheet
 from satapp.scoring import grade
 
@@ -62,6 +63,9 @@ def _form_filters() -> dict:
 
 
 def _select_questions(filters: dict) -> list[dict]:
+    ids = request.values.getlist("question_id")
+    if ids:
+        return [item for item in (get_question(qid) for qid in ids) if item]
     return pick_questions(
         count=filters["count"],
         exam=filters.get("exam"),
@@ -71,6 +75,20 @@ def _select_questions(filters: dict) -> list[dict]:
         demo_only=filters.get("demo_only", False),
         shuffle=filters.get("shuffle", True),
     )
+
+
+def _select_or_generate(filters: dict) -> list[dict]:
+    questions = _select_questions(filters)
+    if request.values.getlist("question_id"):
+        return questions
+    api_key = resolve_api_key()
+    if not api_key or filters.get("demo_only") or len(questions) >= filters["count"]:
+        return questions
+    try:
+        return top_up_questions(filters, questions, api_key)
+    except Exception as exc:  # noqa: BLE001
+        flash(f"Could not generate additional questions: {exc}")
+        return questions
 
 
 def _worksheet_title(filters: dict) -> str:
@@ -131,6 +149,7 @@ def practice():
         filters=filters,
         available=len(available),
         minutes=suggested_minutes(filters["exam"], filters["section"] or None, filters["count"]),
+        has_server_key=has_server_key(),
     )
 
 
@@ -145,6 +164,7 @@ def generate_page():
         "generate.html",
         models=sorted(ALLOWED_MODELS),
         stats=stats(),
+        has_server_key=has_server_key(),
     )
 
 
@@ -152,9 +172,9 @@ def generate_page():
 @bp.get("/worksheet")
 def worksheet():
     filters = _form_filters()
-    questions = _select_questions(filters)
+    questions = _select_or_generate(filters)
     if not questions:
-        flash("No questions match those filters. Try a broader topic or generate more with an API key.")
+        flash("No questions match those filters. Paste an API key on this page to generate additional ones.")
         return redirect(url_for("main.practice"))
     return render_template(
         "worksheet.html",
@@ -172,10 +192,6 @@ def download():
     questions = _select_questions(filters)
     if not questions:
         abort(404)
-    ids = request.values.getlist("question_id")
-    if ids:
-        questions = [get_question(qid) for qid in ids]
-        questions = [item for item in questions if item]
     fmt = (request.values.get("format") or "pdf").lower()
     title = _worksheet_title(filters)
     stamp = datetime.now(timezone.utc).strftime("%Y%m%d")
@@ -212,9 +228,9 @@ def download():
 @bp.post("/exam/start")
 def start_exam():
     filters = _form_filters()
-    questions = _select_questions(filters)
+    questions = _select_or_generate(filters)
     if not questions:
-        flash("No questions match those filters. Widen the topic or generate more items.")
+        flash("No questions match those filters. Paste an API key on this page to generate additional ones.")
         return redirect(url_for("main.practice"))
     try:
         minutes = int(request.values.get("minutes") or suggested_minutes(
@@ -339,9 +355,15 @@ def questions_api():
 @bp.post("/api/generate")
 def generate_api():
     payload = request.get_json(silent=True) or request.form
-    api_key = (payload.get("api_key") or "").strip()
+    api_key = resolve_api_key(payload)
     if not api_key:
-        return jsonify({"ok": False, "error": "Paste an OpenAI API key to create more questions."}), 400
+        return jsonify({
+            "ok": False,
+            "error": (
+                "An OpenAI API key is only used to generate additional questions. "
+                "Paste one here, or set OPENAI_API_KEY in the environment."
+            ),
+        }), 400
     try:
         created = generate_questions(
             api_key=api_key,

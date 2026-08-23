@@ -111,7 +111,72 @@ def test_catalog_api(client):
     assert data["available"] >= 1
 
 
-def test_generate_requires_key(client):
+def test_generate_requires_key(client, monkeypatch):
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     response = client.post("/api/generate", json={"exam": "SAT", "count": 1})
     assert response.status_code == 400
-    assert response.get_json()["ok"] is False
+    body = response.get_json()
+    assert body["ok"] is False
+    assert "additional questions" in body["error"]
+
+
+def test_practice_works_without_api_key(client, monkeypatch):
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    page = client.get("/practice")
+    assert page.status_code == 200
+    assert b"optional" in page.data
+    assert b"Additional questions" in page.data
+    worksheet = client.post("/worksheet", data={"exam": "SAT", "count": 3})
+    assert worksheet.status_code == 200
+    assert b"practice worksheet" in worksheet.data
+
+
+def test_builder_generates_only_the_extra_questions(client, monkeypatch):
+    calls = []
+
+    def fake_generate(**kwargs):
+        calls.append(kwargs)
+        return [{
+            "id": "gen-extra-001",
+            "exam": kwargs["exam"],
+            "section": kwargs["section"],
+            "topic": kwargs["topic"],
+            "difficulty": kwargs["difficulty"],
+            "type": "multiple_choice",
+            "is_demo": False,
+            "source": "generated",
+            "stimulus": None,
+            "question": "Generated extra item?",
+            "choices": {"A": "1", "B": "2", "C": "3", "D": "4"},
+            "answer": "A",
+            "explanation": "Because it was generated.",
+        }]
+
+    monkeypatch.setattr("satapp.keys.generate_questions", fake_generate)
+    pool = filter_questions(exam="ACT", section="Science", difficulty="Hard")
+    assert pool
+    page = client.post(
+        "/worksheet",
+        data={
+            "exam": "ACT",
+            "section": "Science",
+            "difficulty": "Hard",
+            "count": len(pool) + 1,
+            "api_key": "sk-test",
+        },
+    )
+    assert page.status_code == 200
+    assert calls
+    assert calls[0]["api_key"] == "sk-test"
+    assert calls[0]["count"] == 1
+    assert b"Generated extra item?" in page.data
+
+
+def test_builder_skips_generation_when_bank_is_enough(client, monkeypatch):
+    def fail_generate(**kwargs):
+        raise AssertionError("should not generate when the bank already has enough")
+
+    monkeypatch.setattr("satapp.keys.generate_questions", fail_generate)
+    page = client.post("/worksheet", data={"exam": "SAT", "count": 2, "api_key": "sk-test"})
+    assert page.status_code == 200
+    assert b"practice worksheet" in page.data

@@ -205,6 +205,19 @@ select, input[type="number"], input[type="password"], input[type="text"], textar
   clip: rect(0 0 0 0);
 }
 .generated-preview { margin: 1.2rem 0 3rem; }
+.key-box {
+  margin: 1.2rem 0 0;
+  padding: 1rem 1.1rem 1.1rem;
+  border: 1px dashed var(--gold);
+  border-radius: 1rem;
+  background: #fff8ea;
+}
+.key-box legend {
+  font-family: "Fraunces", Georgia, serif;
+  padding: 0 0.4rem;
+}
+.key-box p, .hint { color: var(--muted); font-weight: 500; }
+.hint { margin: 0.6rem 0 0; }
 @media (max-width: 720px) {
   .topbar { flex-direction: column; align-items: flex-start; }
   .hero h1 { max-width: none; }

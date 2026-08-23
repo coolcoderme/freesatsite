@@ -4,7 +4,11 @@
 <section class="page-intro">
   <p class="eyebrow">Practice builder</p>
   <h1>Choose the set, then print it or sit the module.</h1>
-  <p class="lede">{{ available }} question{{ available != 1 and "s" or "" }} match the filters below. Generated items are included automatically once you create them.</p>
+  <p class="lede">
+    {{ available }} question{{ available != 1 and "s" or "" }} are already in the local bank.
+    Practice works without a key. An OpenAI API key is optional and is used only
+    to generate additional questions when you want more than the bank has.
+  </p>
 </section>
 
 <form class="builder" id="builder-form" method="post">
@@ -48,7 +52,19 @@
     <label class="check"><input type="checkbox" name="shuffle" value="1" {% if filters.shuffle %}checked{% endif %}> Shuffle order</label>
   </div>
 
-  <p class="availability" id="availability">{{ available }} available</p>
+  <p class="availability" id="availability">{{ available }} in the local bank</p>
+
+  <fieldset class="key-box">
+    <legend>Additional questions (optional)</legend>
+    <p>If you ask for more items than the bank has, paste a key and FreeSAT will generate only the extra ones.</p>
+    <label class="wide">OpenAI API key
+      <input type="password" name="api_key" id="api-key" autocomplete="off" placeholder="sk-... not required for demo practice">
+    </label>
+    <label class="check"><input type="checkbox" id="remember-key"> Remember this key in this browser only</label>
+    {% if has_server_key %}
+    <p class="hint">A server key is already configured, so extra questions can be generated without pasting one.</p>
+    {% endif %}
+  </fieldset>
 
   <div class="hero-actions">
     <button class="btn primary" type="submit" formaction="{{ url_for('main.worksheet') }}">Open worksheet</button>

@@ -49,7 +49,12 @@ async function refreshCatalog() {
   if (topic) fillSelect(topic, data.topics || [], keepTopic, allowAny ? "Any topic" : null);
   const availability = document.getElementById("availability");
   if (availability && typeof data.available === "number") {
-    availability.textContent = `${data.available} available`;
+    const countField = document.getElementById("count");
+    const wanted = countField ? Number(countField.value) : 0;
+    const extra = wanted > data.available ? wanted - data.available : 0;
+    availability.textContent = extra
+      ? `${data.available} in the local bank · ${extra} additional if you add an API key`
+      : `${data.available} in the local bank`;
   }
 }
 
@@ -71,26 +76,38 @@ function wireCopyButtons() {
   });
 }
 
-function wireGenerator() {
-  const form = document.getElementById("generate-form");
-  if (!form) return;
+function rememberKeyField() {
   const keyField = document.getElementById("api-key");
   const remember = document.getElementById("remember-key");
-  const status = document.getElementById("generate-status");
-  const preview = document.getElementById("generated-preview");
   if (keyField && window.localStorage.getItem("freesat.openaiKey")) {
     keyField.value = window.localStorage.getItem("freesat.openaiKey");
     if (remember) remember.checked = true;
   }
-  form.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const payload = Object.fromEntries(new FormData(form).entries());
-    if (remember && remember.checked) {
-      window.localStorage.setItem("freesat.openaiKey", payload.api_key);
+  const persist = () => {
+    if (!keyField) return;
+    if (remember && remember.checked && keyField.value) {
+      window.localStorage.setItem("freesat.openaiKey", keyField.value);
     } else {
       window.localStorage.removeItem("freesat.openaiKey");
     }
-    status.textContent = "Creating questions…";
+  };
+  if (remember) remember.addEventListener("change", persist);
+  if (keyField) keyField.addEventListener("change", persist);
+  return persist;
+}
+
+function wireGenerator() {
+  const persistKey = rememberKeyField();
+  const form = document.getElementById("generate-form");
+  if (!form) return;
+  const status = document.getElementById("generate-status");
+  const preview = document.getElementById("generated-preview");
+  const actions = document.getElementById("generated-actions");
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    persistKey();
+    const payload = Object.fromEntries(new FormData(form).entries());
+    status.textContent = "Generating additional questions…";
     const response = await fetch("/api/generate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -98,10 +115,10 @@ function wireGenerator() {
     });
     const data = await response.json();
     if (!data.ok) {
-      status.textContent = data.error || "Could not create questions.";
+      status.textContent = data.error || "Could not generate additional questions.";
       return;
     }
-    status.textContent = `Added ${data.created.length} question${data.created.length === 1 ? "" : "s"} to the bank.`;
+    status.textContent = `Added ${data.created.length} additional question${data.created.length === 1 ? "" : "s"} to the bank.`;
     preview.hidden = false;
     preview.innerHTML = data.created.map((item, index) => `
       <article class="sheet-item">
@@ -112,6 +129,14 @@ function wireGenerator() {
         <p>${item.explanation || ""}</p>
       </article>
     `).join("");
+    if (actions) {
+      const ids = data.created.map((item) => `<input type="hidden" name="question_id" value="${item.id}">`).join("");
+      actions.hidden = false;
+      actions.innerHTML = `
+        <form method="post" action="/worksheet">${ids}<button class="btn primary" type="submit">Open these as a worksheet</button></form>
+        <form method="post" action="/exam/start">${ids}<input type="hidden" name="minutes" value="20"><button class="btn ghost" type="submit">Sit these in the testing room</button></form>
+      `;
+    }
   });
 }
 
@@ -124,6 +149,8 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     const demo = document.querySelector('[name="demo_only"]');
     if (demo) demo.addEventListener("change", refreshCatalog);
+    const countField = document.getElementById("count");
+    if (countField) countField.addEventListener("input", refreshCatalog);
     refreshCatalog();
   }
   wireCopyButtons();
