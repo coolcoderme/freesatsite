@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}Build practice · FreeSAT{% endblock %}
+{% block content %}
+<section class="page-intro">
+  <p class="eyebrow">Practice builder</p>
+  <h1>Choose the set, then print it or sit the module.</h1>
+  <p class="lede">
+    {{ available }} question{{ available != 1 and "s" or "" }} are already in the local bank.
+    Practice works without a key. An OpenAI API key is optional and is used only
+    to generate additional questions when you want more than the bank has.
+  </p>
+</section>
+
+<form class="builder" id="builder-form" method="post">
+  <div class="builder-grid">
+    <label>Exam
+      <select name="exam" id="exam">
+        {% for exam in EXAMS %}
+        <option value="{{ exam }}" {% if filters.exam == exam %}selected{% endif %}>{{ exam }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Section
+      <select name="section" id="section">
+        <option value="">Any section</option>
+      </select>
+    </label>
+    <label>Topic
+      <select name="topic" id="topic">
+        <option value="">Any topic</option>
+      </select>
+    </label>
+    <label>Complexity
+      <select name="difficulty" id="difficulty">
+        <option value="">Any difficulty</option>
+        {% for level in DIFFICULTIES %}
+        <option value="{{ level }}" {% if filters.difficulty == level %}selected{% endif %}>{{ level }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Number of questions
+      <input type="number" name="count" id="count" min="1" max="40" value="{{ filters.count }}">
+    </label>
+    <label>Testing minutes
+      <input type="number" name="minutes" id="minutes" min="1" max="180" value="{{ minutes }}">
+    </label>
+  </div>
+
+  <div class="check-row">
+    <label class="check"><input type="checkbox" name="demo_only" value="1" {% if filters.demo_only %}checked{% endif %}> Use only the 10 demo questions</label>
+    <label class="check"><input type="checkbox" name="include_key" value="1" {% if filters.include_key %}checked{% endif %}> Include answer key on worksheets</label>
+    <label class="check"><input type="checkbox" name="shuffle" value="1" {% if filters.shuffle %}checked{% endif %}> Shuffle order</label>
+  </div>
+
+  <p class="availability" id="availability">{{ available }} in the local bank</p>
+
+  <fieldset class="key-box">
+    <legend>Additional questions (optional)</legend>
+    <p>If you ask for more items than the bank has, paste a key and FreeSAT will generate only the extra ones.</p>
+    <label class="wide">OpenAI API key
+      <input type="password" name="api_key" id="api-key" autocomplete="off" placeholder="sk-... not required for demo practice">
+    </label>
+    <label class="check"><input type="checkbox" id="remember-key"> Remember this key in this browser only</label>
+    {% if has_server_key %}
+    <p class="hint">A server key is already configured, so extra questions can be generated without pasting one.</p>
+    {% endif %}
+  </fieldset>
+
+  <div class="hero-actions">
+    <button class="btn primary" type="submit" formaction="{{ url_for('main.worksheet') }}">Open worksheet</button>
+    <button class="btn ghost" type="submit" formaction="{{ url_for('main.start_exam') }}">Enter testing room</button>
+  </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  window.FREESAT_BUILDER = {
+    exam: {{ filters.exam|tojson }},
+    section: {{ filters.section|tojson }},
+    topic: {{ filters.topic|tojson }},
+    catalog: {{ url_for('main.catalog_api')|tojson }}
+  };
+</script>
+{% endblock %}
