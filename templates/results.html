@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Results · FreeSAT{% endblock %}
+{% block content %}
+<section class="page-intro">
+  <p class="eyebrow">Score report</p>
+  <h1>{{ report.correct }} / {{ report.total }} correct ({{ report.percent }}%)</h1>
+  <p class="lede">{{ exam.filters.exam }}{% if exam.filters.section %} · {{ exam.filters.section }}{% endif %} · {{ report.total }} questions</p>
+  <div class="hero-actions">
+    <a class="btn primary" href="{{ url_for('main.practice') }}">Build another set</a>
+    <a class="btn ghost" href="{{ url_for('main.home') }}">Home</a>
+  </div>
+</section>
+
+<ol class="result-list">
+  {% for item in report.results %}
+  <li class="result-card {{ 'ok' if item.correct else 'miss' }}">
+    <p class="meta">{{ loop.index }}. {{ item.exam }} · {{ item.topic }} · {{ "Correct" if item.correct else "Incorrect" }}</p>
+    {% if item.stimulus %}<pre class="stimulus">{{ item.stimulus }}</pre>{% endif %}
+    <p class="prompt">{{ item.question }}</p>
+    {% if item.choices %}
+    <ul class="choices">
+      {% for letter, text in item.choices.items() %}
+      <li class="{% if letter == item.answer %}key{% endif %}{% if letter == item.given and not item.correct %} picked{% endif %}">
+        <span>{{ letter }}</span>{{ text }}
+      </li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+    <p class="key">Your answer: {{ item.given or "blank" }} · Correct: {{ item.answer }}</p>
+    <p>{{ item.explanation }}</p>
+  </li>
+  {% endfor %}
+</ol>
+{% endblock %}

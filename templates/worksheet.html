@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} · FreeSAT{% endblock %}
+{% block extra_css %}
+<style>
+  @media print {
+    .topbar, .site-footer, .sheet-toolbar, .flash-stack { display: none !important; }
+    body { background: #fff; }
+    .sheet { box-shadow: none; margin: 0; }
+  }
+</style>
+{% endblock %}
+{% block content %}
+<div class="sheet-toolbar no-print">
+  <div>
+    <p class="eyebrow">Worksheet</p>
+    <h1>{{ title }}</h1>
+    <p>{{ questions|length }} questions · copy, download, or print</p>
+  </div>
+  <div class="toolbar-actions">
+    <button class="btn ghost" type="button" id="copy-sheet" data-copy-target="sheet-plain">Copy</button>
+    <button class="btn ghost" type="button" onclick="window.print()">Print</button>
+    <form method="post" action="{{ url_for('main.download') }}" class="inline-form">
+      {% for key, value in filters.items() %}
+        {% if value %}
+        <input type="hidden" name="{{ key }}" value="{{ 1 if value is sameas true else value }}">
+        {% endif %}
+      {% endfor %}
+      {% for item in questions %}
+        <input type="hidden" name="question_id" value="{{ item.id }}">
+      {% endfor %}
+      <button class="btn ghost" name="format" value="txt">TXT</button>
+      <button class="btn ghost" name="format" value="json">JSON</button>
+      <button class="btn primary" name="format" value="pdf">Download PDF</button>
+    </form>
+  </div>
+</div>
+
+<article class="sheet" id="worksheet">
+  <header class="sheet-banner">
+    <h2>{{ title }}</h2>
+    <p>Name ______________________  Date ______________  Score ______ / {{ questions|length }}</p>
+  </header>
+  {% for item in questions %}
+  <section class="sheet-item">
+    <p class="meta">{{ loop.index }}. {{ item.exam }} · {{ item.section }} · {{ item.topic }} · {{ item.difficulty }}{% if item.is_demo %} · demo{% endif %}</p>
+    {% if item.stimulus %}<pre class="stimulus">{{ item.stimulus }}</pre>{% endif %}
+    <p class="prompt">{{ item.question }}</p>
+    {% if item.type == "grid_in" %}
+      <p class="grid-in">Student-produced response: ____________________</p>
+    {% else %}
+      <ul class="choices">
+        {% for letter, text in item.choices.items() %}
+        <li><span>{{ letter }}</span>{{ text }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+    {% if include_key %}
+    <p class="key">Answer: {{ item.answer }} — {{ item.explanation }}</p>
+    {% endif %}
+  </section>
+  {% endfor %}
+</article>
+<textarea id="sheet-plain" class="sr-only" readonly>{{ plain }}</textarea>
+{% endblock %}

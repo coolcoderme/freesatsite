@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}Testing room · FreeSAT{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/exam.css') }}">
+{% endblock %}
+{% block body_class %}exam-body{% endblock %}
+{% block chrome %}{% endblock %}
+{% block footer %}{% endblock %}
+{% block main_class %}exam-root{% endblock %}
+{% block content %}
+<div id="exam-app"
+     data-exam-id="{{ exam.id }}"
+     data-minutes="{{ minutes }}"
+     data-save-url="{{ url_for('main.save_exam', exam_id=exam.id) }}"
+     data-submit-url="{{ url_for('main.submit_exam', exam_id=exam.id) }}">
+
+  <header class="exam-chrome">
+    <div class="exam-brand">
+      <span class="desk-dot"></span>
+      Deskbook
+      <small>{{ exam.filters.exam }}{% if exam.filters.section %} · {{ exam.filters.section }}{% endif %}</small>
+    </div>
+    <div class="exam-tools">
+      <button type="button" data-tool="highlight">Highlight</button>
+      <button type="button" data-tool="notes">Notes</button>
+      <button type="button" data-tool="calc">Calculator</button>
+      <button type="button" data-tool="ref">Reference</button>
+    </div>
+    <div class="exam-timer" id="exam-timer" aria-live="polite">00:00</div>
+  </header>
+
+  <section class="exam-stage" id="exam-stage">
+    <aside class="exam-rail" id="exam-rail"></aside>
+    <article class="exam-paper">
+      <div class="exam-meta" id="exam-meta"></div>
+      <div class="exam-passage" id="exam-passage"></div>
+      <div class="exam-prompt" id="exam-prompt"></div>
+      <div class="exam-answers" id="exam-answers"></div>
+      <label class="flag-row">
+        <input type="checkbox" id="mark-review"> Mark for review
+      </label>
+    </article>
+  </section>
+
+  <footer class="exam-dock">
+    <button type="button" class="exam-btn" id="prev-q">Back</button>
+    <button type="button" class="exam-btn" id="next-q">Next</button>
+    <button type="button" class="exam-btn primary" id="review-btn">Review</button>
+  </footer>
+
+  <section class="exam-review" id="exam-review" hidden>
+    <h2>Review and submit</h2>
+    <p>Unanswered and flagged items are listed first. You can return to any question.</p>
+    <div id="review-list"></div>
+    <form id="submit-form" method="post" action="{{ url_for('main.submit_exam', exam_id=exam.id) }}">
+      <input type="hidden" name="answers" id="submit-answers">
+      <button class="exam-btn primary" type="submit">Submit module</button>
+    </form>
+  </section>
+</div>
+
+<div class="exam-modal" id="notes-modal" hidden>
+  <div class="modal-card">
+    <h3>Question notes</h3>
+    <textarea id="note-box" rows="8" placeholder="Private notes for this question"></textarea>
+    <button type="button" class="exam-btn" data-close="notes-modal">Close</button>
+  </div>
+</div>
+
+<div class="exam-modal" id="calc-modal" hidden>
+  <div class="modal-card calc-card">
+    <h3>Calculator</h3>
+    <input id="calc-display" readonly value="0">
+    <div class="calc-grid" id="calc-grid"></div>
+    <button type="button" class="exam-btn" data-close="calc-modal">Close</button>
+  </div>
+</div>
+
+<div class="exam-modal" id="ref-modal" hidden>
+  <div class="modal-card">
+    <h3>Math reference</h3>
+    <ul class="ref-list">
+      <li>Circle: A = πr², C = 2πr</li>
+      <li>Rectangle: A = lw</li>
+      <li>Triangle: A = ½bh</li>
+      <li>Pythagorean theorem: a² + b² = c²</li>
+      <li>Special right triangles: 30-60-90 and 45-45-90</li>
+      <li>Line: y = mx + b</li>
+      <li>Mean = sum of values / number of values</li>
+    </ul>
+    <button type="button" class="exam-btn" data-close="ref-modal">Close</button>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>window.FREESAT_EXAM = {{ questions|tojson }};</script>
+<script src="{{ url_for('static', filename='js/exam.js') }}" defer></script>
+{% endblock %}
